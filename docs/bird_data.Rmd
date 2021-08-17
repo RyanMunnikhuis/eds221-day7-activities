@@ -1,0 +1,60 @@
+---
+title: "Untitled"
+author: "Ryan Munnikhuis"
+date: "8/17/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(lubridate)
+
+```
+```{r}
+bird_data = read_csv(here::here("data", ("52_pp52_birds_1.csv")))
+sites_data = read_csv(here("data", "52_pp52_sites_1.csv"))
+survey_data = read_csv(here("data", "52_pp52_surveys_1.csv"))
+taxa_data = read_csv(here("data", "52_pp52_taxalist_1.csv"))
+```
+```{r}
+bird_subset = bird_data %>% 
+  filter(species_id %in% c("BHCO", "RWBL")) %>%
+  filter(site_id %in% c("LI-W", "NU-C"))
+
+birds_left = left_join(bird_subset, taxa_data, by = "species_id")
+
+birds_left = left_join(birds_left, sites_data, by = "site_id")
+```
+
+```{r}
+## full join will integrate all columns from site_data and will re-integrate data exlcuded in the rows from bird_subset.
+birds_full = full_join(bird_subset, sites_data, by = "site_id")
+
+```
+```{r}
+## Inner_join will filter the two data sets and output a column with the only overlapping rows. 
+
+birds_inner = inner_join(bird_subset, taxa_data, by = "species_id")
+```
+
+```{r}
+
+bird_data %>% rename("bird_obs_notes" = "notes")
+
+bird_1 = full_join(bird_data, sites_data, by ="site_id")
+bird_2 = full_join(bird_1, taxa_data, by = "species_id")
+bird_tot = full_join(bird_2, survey_data, by = c("survey_id", "site_id"))
+
+birds = bird_tot %>% select(survey_date, common_name, park_name, bird_count)
+
+birds_time = birds %>%  
+  mutate(survey_month = lubridate::month(survey_date)) %>%
+  mutate(survey_month = as.factor(survey_month)) %>%
+  relocate(survey_month, .after =  survey_date) %>%
+  group_by(park_name, survey_month) %>% summarize(bird_count = (birds_time = n())) %>% 
+  filter(park_name %in% c("Lindo", "Orme", "Palomino", "Sonrisa"))
+
+```
+
